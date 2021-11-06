@@ -54,20 +54,23 @@ int nrsh_exit(char **args) {
 }
 int nrsh_launch(char **args) {
     pid_t pid;
-    int status;
+    int status, exit_status;
 
     pid = fork();
     if (pid == 0) {
         if (execvp(args[0], args) == -1) {
-            perror("nrsh: fork failed");
+            perror("nrsh: fork failed 1");
         }
         exit(EXIT_FAILURE);
     } else if (pid < 0) {
-        perror("nrsh: fork failed");
+        perror("nrsh: fork failed 2");
     } else {
         do {
             waitpid(pid, &status, WUNTRACED);
         } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+    }
+    if (WIFEXITED(status)) {
+        exit_status = WEXITSTATUS(status);
     }
     return 1;
 }
