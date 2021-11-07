@@ -71,9 +71,7 @@ int nrsh_launch(char **args) {
     }
     if (WIFEXITED(status)) {
         exit_status = WEXITSTATUS(status);
-        if (exit_status != 0) {
-            return exit_status;
-        }
+        return exit_status;
     }
     return 0;
 }
