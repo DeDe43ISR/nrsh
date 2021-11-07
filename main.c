@@ -32,7 +32,7 @@ int nrsh_cd(char **args) {
             perror("nrsh: cd error");
         }
     }
-    return 1;
+    return 0;
 }
 
 int nrsh_help(char **args) {
@@ -46,11 +46,11 @@ int nrsh_help(char **args) {
         printf(" %s\n", builtin_str[i]);
     }
     printf("Use the man command for information on other programs.\n");
-    return 1;
+    return 0;
 }
 
 int nrsh_exit(char **args) {
-    return 0;
+    exit(0);
 }
 int nrsh_launch(char **args) {
     pid_t pid;
@@ -71,14 +71,18 @@ int nrsh_launch(char **args) {
     }
     if (WIFEXITED(status)) {
         exit_status = WEXITSTATUS(status);
+        if (exit_status != 0) {
+            return exit_status;
+        }
     }
-    return 1;
+    return 0;
 }
+
 int nrsh_execute(char **args) {
     int i;
 
     if (args[0] == NULL) {
-        return 1;
+        return 0;
     }
 
     for (i = 0; i < nrsh_builtin_sum(); i++) {
@@ -166,7 +170,7 @@ void nrsh_loop(void) {
     char **args;
     int status;
 
-    do {
+    while (1)  {
         printf("$ ");
         line = nrsh_read_line();
         args = nrsh_split_line(line);
@@ -174,7 +178,7 @@ void nrsh_loop(void) {
 
         free(line);
         free(args);
-    } while(status);
+    }
 }
 
 int main(int agrc, char **argv) {
