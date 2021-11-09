@@ -162,6 +162,72 @@ char **nrsh_split_line(char *line) {
     return tokens;
 }
 
+#define NRSH_COM_BUFSIZE 1024
+int nrsh_run(char **args) {
+
+    int bufsize = NRSH_COM_BUFSIZE;
+    char **command = malloc(bufsize * sizeof(char*));
+    int args_size = 0;
+    int place = 0, command_counter = 0;
+    int last = 0, run = 0;
+    int status = -1;
+
+    if (!command) {
+        fprintf(stderr, "nrsh: tokens buffer allocation error\n");
+        exit(EXIT_FAILURE);
+    }
+
+    for (args_size = 0; args[args_size] != NULL; args_size++);
+
+    for (int counter = 0; counter <= args_size; counter++) {
+        if (args[counter] == NULL) {
+            command[command_counter] = NULL;
+            if ((last == 1 && (status == 0 || status == -1)) || last == 2 && (status == 1 || status == -1) || last == 0) {
+                status = nrsh_execute(command);
+            }
+            if ((last == 1 && (status == 1 || status == -1)) || last == 2 && (status == 0 || status == -1)) {
+                continue;
+            }
+            return status;
+        } else if (strcmp(args[counter], "&&") == 0) {
+            command[command_counter] = NULL;
+            if ((last == 1 && (status == 0 || status == -1)) || last == 2 && (status == 1 || status == -1)) {
+                status = nrsh_execute(command);
+                command_counter = 0;
+                last = 0;
+            }
+            if ((last == 1 && (status == 1 || status == -1)) || last == 2 && (status == 0 || status == -1)) {
+                command_counter = 0;
+                last = 0;
+                status = 0;
+            }
+            last = 1;
+        } else if (strcmp(args[counter], "||") == 0) {
+            command[command_counter] = NULL;
+            if ((last == 1 && (status == 0 || status == -1)) || last == 2 && (status == 1 || status == -1)) {
+                status = nrsh_execute(command);
+                command_counter = 0;
+                last = 0;
+            }
+            if ((last == 1 && (status == 1 || status == -1)) || last == 2 && (status == 0 || status == -1)) {
+                command_counter = 0;
+                last = 0;
+                status = 0;
+            }
+            last = 2;
+        } else if (strcmp(args[counter], ";") == 0) {
+            command[command_counter] = NULL;
+            status = nrsh_execute(command);
+            command_counter = 0;
+        } else {
+            command[command_counter] = args[counter];
+            command_counter++;
+        }
+    }
+    free(command);
+
+}
+
 void nrsh_loop(void) {
 
     char *line;
@@ -172,7 +238,7 @@ void nrsh_loop(void) {
         printf("$ ");
         line = nrsh_read_line();
         args = nrsh_split_line(line);
-        status = nrsh_execute(args);
+        status = nrsh_run(args);
 
         free(line);
         free(args);
