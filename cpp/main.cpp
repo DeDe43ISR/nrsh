@@ -8,29 +8,27 @@
 #include <cstring>
 
 std::vector<std::string> builtin_str { "cd", "help", "exit"};
-//int nrsh_cd (std::vector<std::string> args) {
-//    if (args.size() == 0) {
-//        fprintf(stderr, "nrsh: expected argument to \"cd\"\n");
-//    } else {
-//        if (chdir(args[1]) != 0) {
-//            perror("nrsh: cd error");
-//        }
-//    }
-//    return 0;
-//}
 
 int nrsh_builtin (std::vector<char *> args) {
-    if (strcmp(args[0], "cd") == 0) {
+    //strcmp return value if strings no equal
+    if (!strcmp(args[0], "cd")) {
         if (args[1] == NULL) {
             std::cerr << "nrsh: expected argument to \"cd\"\n";
-            return 1;
         } else { 
             if (chdir(args[1]) != 0) {
                 std::cerr << "nrsh: cd error";
-                return 1;
             }
         }
         return 0;
+    } else if (!strcmp(args[0], "exit")) {
+        return 1;
+    } else if (!strcmp(args[0], "help")) {
+        std::cout << "DeDe Narco Shell\n";
+        std::cout << "Type program names and arguments, and hit enter.\n";
+        std::cout << "The following are built in:\n";
+
+        for(int i = 0; i < builtin_str.size(); i++)
+            std::cout << builtin_str[i] << "\n";
     }
     return 0;
 }
@@ -93,23 +91,20 @@ std::vector<std::string> nrsh_get_line () {
 void nrsh_loop(void) {
 
     std::vector<std::string> line;
-//    std::string args;
     const char delim = ' ';
     int status;
 
 
-    while (1)  {
+    do {
         char buff[FILENAME_MAX];
         getcwd (buff, FILENAME_MAX);
         std::cout << buff << " $ ";
         line = nrsh_get_line();
-//        std::cin >> line;
-//        args = nrsh_split_line(line);
         status = nrsh_run(line);
 
         line.clear();
         line.shrink_to_fit();
-    }
+    } while (!status);
 }
 
 
