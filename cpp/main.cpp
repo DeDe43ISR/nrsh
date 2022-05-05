@@ -4,12 +4,10 @@
 #include <sstream>
 #include <sys/wait.h>
 #include <unistd.h>
+#include <algorithm>
+#include <cstring>
 
-//std::vector<std::string> builtin_str = {
-//    "cd"
-////    "help",
-////    "exit"
-//};
+std::vector<std::string> builtin_str { "cd", "help", "exit"};
 //int nrsh_cd (std::vector<std::string> args) {
 //    if (args.size() == 0) {
 //        fprintf(stderr, "nrsh: expected argument to \"cd\"\n");
@@ -21,17 +19,34 @@
 //    return 0;
 //}
 
+int nrsh_builtin (std::vector<char *> args) {
+    if (strcmp(args[0], "cd") == 0) {
+        if (args[1] == NULL) {
+            std::cerr << "nrsh: expected argument to \"cd\"\n";
+            return 1;
+        } else { 
+            if (chdir(args[1]) != 0) {
+                std::cerr << "nrsh: cd error";
+                return 1;
+            }
+        }
+        return 0;
+    }
+    return 0;
+}
 int nrsh_run (std::vector<std::string> args) {
+
+    std::vector<char *> args_str(args.size() + 1);
+    for (std::size_t i = 0; i != args.size(); ++i) {
+        args_str[i] = &args[i][0];
+    }
+    
+    if (std::find(builtin_str.begin(), builtin_str.end(), args_str[0]) != builtin_str.end()) {
+        return (nrsh_builtin(args_str));
+    }
     pid_t pid;
     int status, exit_status;
 
-    std::vector<char *> args_str(args.size() + 1);
-    for (std::size_t i = 0; i != args.size(); ++i)
-    {
-        args_str[i] = &args[i][0];
-    }
-
-    
     pid = fork();
 
     if (pid == 0) {
@@ -59,6 +74,9 @@ std::vector<std::string> nrsh_get_line () {
     std::string S, T;  // declare string variables
 
     std::getline(std::cin, S); // use getline() function to read a line of string and store into S variable.
+    if (std::cin.eof()) {
+        exit(EXIT_SUCCESS);
+    }
 
     std::stringstream X(S); // X is an object of stringstream that references the S string
 
@@ -79,8 +97,11 @@ void nrsh_loop(void) {
     const char delim = ' ';
     int status;
 
+
     while (1)  {
-        std::cout << "$ ";
+        char buff[FILENAME_MAX];
+        getcwd (buff, FILENAME_MAX);
+        std::cout << buff << " $ ";
         line = nrsh_get_line();
 //        std::cin >> line;
 //        args = nrsh_split_line(line);
