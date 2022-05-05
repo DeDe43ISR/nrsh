@@ -2,7 +2,56 @@
 #include <string>
 #include <vector>
 #include <sstream>
+#include <sys/wait.h>
+#include <unistd.h>
 
+//std::vector<std::string> builtin_str = {
+//    "cd"
+////    "help",
+////    "exit"
+//};
+//int nrsh_cd (std::vector<std::string> args) {
+//    if (args.size() == 0) {
+//        fprintf(stderr, "nrsh: expected argument to \"cd\"\n");
+//    } else {
+//        if (chdir(args[1]) != 0) {
+//            perror("nrsh: cd error");
+//        }
+//    }
+//    return 0;
+//}
+
+int nrsh_run (std::vector<std::string> args) {
+    pid_t pid;
+    int status, exit_status;
+
+    std::vector<char *> args_str(args.size() + 1);
+    for (std::size_t i = 0; i != args.size(); ++i)
+    {
+        args_str[i] = &args[i][0];
+    }
+
+    
+    pid = fork();
+
+    if (pid == 0) {
+        if (execvp(args_str[0], args_str.data()) == -1) {
+            perror("nrsh: fork failed 1");
+        }
+        exit(EXIT_FAILURE);
+    } else if (pid < 0) {
+        perror("nrsh: fork failed 2");
+    } else {
+        do {
+            waitpid(pid, &status, WUNTRACED);
+        } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+    }
+    if (WIFEXITED(status)) {
+        exit_status = WEXITSTATUS(status);
+        return exit_status;
+    }
+    return 0;
+}
 
 std::vector<std::string> nrsh_get_line () {
 
@@ -26,7 +75,7 @@ std::vector<std::string> nrsh_get_line () {
 void nrsh_loop(void) {
 
     std::vector<std::string> line;
-    std::string args;
+//    std::string args;
     const char delim = ' ';
     int status;
 
@@ -35,7 +84,7 @@ void nrsh_loop(void) {
         line = nrsh_get_line();
 //        std::cin >> line;
 //        args = nrsh_split_line(line);
-//        status = nrsh_run(args);
+        status = nrsh_run(line);
 
         line.clear();
         line.shrink_to_fit();
