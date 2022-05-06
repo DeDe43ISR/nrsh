@@ -32,13 +32,9 @@ int nrsh_builtin (std::vector<char *> args) {
     }
     return 0;
 }
-int nrsh_run (std::vector<std::string> args) {
 
-    std::vector<char *> args_str(args.size() + 1);
-    for (std::size_t i = 0; i != args.size(); ++i) {
-        args_str[i] = &args[i][0];
-    }
-    
+int nrsh_exec (std::vector<char *> args_str) {
+
     if (std::find(builtin_str.begin(), builtin_str.end(), args_str[0]) != builtin_str.end()) {
         return (nrsh_builtin(args_str));
     }
@@ -65,6 +61,17 @@ int nrsh_run (std::vector<std::string> args) {
     }
     return 0;
 }
+
+int nrsh_run (std::vector<std::string> args) {
+
+    std::vector<char *> args_str(args.size() + 1);
+    for (std::size_t i = 0; i != args.size(); ++i) {
+        args_str[i] = &args[i][0];
+    }
+    return nrsh_exec (args_str);
+
+}
+
 
 std::vector<std::string> nrsh_get_line () {
 
@@ -96,9 +103,9 @@ void nrsh_loop(void) {
 
 
     do {
-        char buff[FILENAME_MAX];
-        getcwd (buff, FILENAME_MAX);
-        std::cout << buff << " $ ";
+        char cpwd[FILENAME_MAX];
+        getcwd (cpwd, FILENAME_MAX);
+        std::cout << cpwd << " $ ";
         line = nrsh_get_line();
         status = nrsh_run(line);
 
