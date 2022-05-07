@@ -21,7 +21,7 @@ int nrsh_builtin (std::vector<char *> args) {
         }
         return 0;
     } else if (!strcmp(args[0], "exit")) {
-        return 1;
+        exit (EXIT_SUCCESS);
     } else if (!strcmp(args[0], "help")) {
         std::cout << "DeDe Narco Shell\n";
         std::cout << "Type program names and arguments, and hit enter.\n";
@@ -41,11 +41,11 @@ int nrsh_exec (std::vector<char *> args_str) {
     pid_t pid;
     int status, exit_status, negate = 0;
 
-    //if (!strcmp(args_str[0] ,"!")) {
-    //    std::cout << " in";
-    //    negate = 1;
-    //    args_str.erase(args_str.begin());
-    //}
+    if (!strcmp(args_str[0] ,"!")) {
+        std::cout << " in";
+        negate = 1;
+        args_str.erase(args_str.begin());
+    }
     pid = fork();
 
     if (pid == 0) {
@@ -63,9 +63,13 @@ int nrsh_exec (std::vector<char *> args_str) {
     if (WIFEXITED(status)) {
         exit_status = WEXITSTATUS(status);
         if (negate == 1) {
-            exit_status = -exit_status;
+            if (exit_status == 0) {
+                exit_status = 1;
+            } else {
+                exit_status = 0;
+            }
         }
-        std::cout << exit_status;
+        std::cout << "status : " << exit_status << "\n";
         return exit_status;
     }
     return 0;
@@ -111,19 +115,23 @@ void nrsh_loop(void) {
 
     std::vector<std::string> line;
     const char delim = ' ';
-    int status;
+    int status = 0;
 
 
-    do {
+    while (1) {
         char cpwd[FILENAME_MAX];
         getcwd (cpwd, FILENAME_MAX);
         std::cout << cpwd << " $ ";
         line = nrsh_get_line();
+
+        if (line.empty())
+            continue;
+
         status = nrsh_run(line);
 
         line.clear();
         line.shrink_to_fit();
-    } while (!status);
+    }
 }
 
 
