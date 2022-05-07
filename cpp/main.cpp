@@ -39,8 +39,13 @@ int nrsh_exec (std::vector<char *> args_str) {
         return (nrsh_builtin(args_str));
     }
     pid_t pid;
-    int status, exit_status;
+    int status, exit_status, negate = 0;
 
+    //if (!strcmp(args_str[0] ,"!")) {
+    //    std::cout << " in";
+    //    negate = 1;
+    //    args_str.erase(args_str.begin());
+    //}
     pid = fork();
 
     if (pid == 0) {
@@ -57,6 +62,10 @@ int nrsh_exec (std::vector<char *> args_str) {
     }
     if (WIFEXITED(status)) {
         exit_status = WEXITSTATUS(status);
+        if (negate == 1) {
+            exit_status = -exit_status;
+        }
+        std::cout << exit_status;
         return exit_status;
     }
     return 0;
@@ -66,6 +75,9 @@ int nrsh_run (std::vector<std::string> args) {
 
     std::vector<char *> args_str(args.size() + 1);
     for (std::size_t i = 0; i != args.size(); ++i) {
+        //if (args_str[i] == " " && args_str[i-1] == "!") {
+        //    
+        //}
         args_str[i] = &args[i][0];
     }
     return nrsh_exec (args_str);
