@@ -6,6 +6,7 @@
 #include <unistd.h>
 #include <algorithm>
 #include <cstring>
+#include <regex>
 
 std::vector<std::string> builtin_str { "cd", "help", "exit"};
 
@@ -74,40 +75,70 @@ int nrsh_exec (std::vector<char *> args_str) {
     }
     return 0;
 }
+std::vector<char *> split_space (char *to_split, int str_size) {
+    std::vector<char *> output(str_size);
+    char * token = strtok(to_split, " ");
+    for (int counter = 0; token != NULL; counter++) {
+        output[counter] = token;
+        token = strtok(NULL, " ");
+    }
+    return output;
+}
 
 int nrsh_run (std::vector<std::string> args) {
 
+    int exit_status = 0, str_c = 0;
     std::vector<char *> args_str(args.size() + 1);
+    //std::cout << "\ncmd : " << args[0] << "\n";
+    //std::cout << "\nsize : " << args.size() << "\n";
     for (std::size_t i = 0; i != args.size(); ++i) {
-        //if (args_str[i] == " " && args_str[i-1] == "!") {
-        //    
-        //}
-        args_str[i] = &args[i][0];
+
+
+        if (!strcmp(&args[i][0], ";")) {
+            int str_size = args[i-1].size() + 1;
+            std::vector<char *> temp_args_str(str_size);
+
+            temp_args_str = split_space (&args[i-1][0], str_size);
+
+            exit_status = nrsh_exec (temp_args_str);
+        }
+    //        args_str.erase(args_str.begin(), args_str.begin() + str_c);
+    //        str_c = 0;
+    //    } else {
+    //    args_str[str_c] = &args[vec_c][0];
+    //    str_c++;
+    //    }
+    //}
+    //std::cout << "\ncmd2 : " << args_str[1] << "\n";
+    //for(int i = 0; i < args.size(); i++)
+    //    std::cout << args[i] << "---";
+    //return nrsh_exec (args_str);
     }
-    return nrsh_exec (args_str);
 
 }
 
 
 std::vector<std::string> nrsh_get_line () {
 
-    std::vector<std::string> output;
-    std::string S, T;  // declare string variables
+    std::string input;
 
-    std::getline(std::cin, S); // use getline() function to read a line of string and store into S variable.
-    if (std::cin.eof()) {
-        exit(EXIT_SUCCESS);
-    }
+    std::getline(std::cin, input); // use getline() function to read a line of string and store into S variable.
+    //if (std::cin.eof()) {
+    //    exit(EXIT_SUCCESS);
+    //}
 
-    std::stringstream X(S); // X is an object of stringstream that references the S string
+    //std::stringstream X(S); // X is an object of stringstream that references the S string
 
-    // use while loop to check the getline() function condition
-    while (std::getline(X, T, ' ')) {
-        /* X represents to read the string from stringstream, T use for store the token string and,
-         ' ' whitespace represents to split the string where whitespace is found. */
-        output.push_back(T);
-        //cout << T << endl; // print split string
-    }
+    //// use while loop to check the getline() function condition
+    //while (std::getline(X, T, ' ')) {
+    //    /* X represents to read the string from stringstream, T use for store the token string and,
+    //     ' ' whitespace represents to split the string where whitespace is found. */
+    //    output.push_back(T);
+    //    //cout << T << endl; // print split string
+    //}
+    std::regex re("([;]|[^;]+)");
+    std::sregex_token_iterator first{input.begin(), input.end(), re}, last;//the '-1' is what makes the regex split (-1 := what was not matched)
+    std::vector<std::string> output{first, last};
 
     return output;
 }
