@@ -93,9 +93,11 @@ int nrsh_exec(std::string arg) {
 
 int nrsh_run (std::vector<std::string> args) {
 
-    int temp_exit_status = 0;
+    int temp_exit_status = 500;
     std::vector<char *> args_str(args.size() + 1);
     for (std::size_t i = 0; i < args.size(); ++i) {
+        
+        //std::cout << "to exec : " << args[i] << "\n";
 
         if (!strcmp(&args[i][0], ";")) {
 
@@ -103,8 +105,13 @@ int nrsh_run (std::vector<std::string> args) {
 
         } else if ((!strcmp(&args[i][0], "|") && (!strcmp(&args[i+1][0], "|")))) {
 
-            temp_exit_status = nrsh_exec(args[i-1]);
-
+            if (temp_exit_status != 0) {
+                //std::cout << "exec or : " << args[i-1] << "\n";
+                temp_exit_status = nrsh_exec(args[i-1]);
+            } else {
+                i+=2;
+                continue;
+            }
             if (temp_exit_status == 0) {
                 i+=2;
                 continue;
@@ -116,14 +123,20 @@ int nrsh_run (std::vector<std::string> args) {
 
         } else if ((!strcmp(&args[i][0], "&") && (!strcmp(&args[i+1][0], "&")))) {
 
-            temp_exit_status = nrsh_exec(args[i-1]);
-
+            if (temp_exit_status == 0 || temp_exit_status == 500) {
+                //std::cout << "exec and : " << args[i-1] << "\n";
+                temp_exit_status = nrsh_exec(args[i-1]);
+            } else {
+                i+=2;
+                continue;
+            }
             if (temp_exit_status == 0) {
+                //std::cout << "exec 2 and : " << args[i+2] << "\n";
                 temp_exit_status = nrsh_exec(args[i+2]);
                 i+=2;
                 continue;
             } else {
-                i+=2;
+                i+=3;
                 continue;
             }
         } else if (i == args.size() - 1) {
