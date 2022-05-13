@@ -8,7 +8,18 @@
 #include <cstring>
 #include <regex>
 
-std::vector<std::string> builtin_str { "cd", "help", "exit"};
+std::vector<std::string> builtin_str { "cd", "help", "exit", "exec"};
+
+std::vector<char *> split_space (char *to_split, int str_size) {
+    std::vector<char *> output(str_size);
+    char * token = strtok(to_split, " ");
+    for (int counter = 0; token != NULL; counter++) {
+        output[counter] = token;
+        token = strtok(NULL, " ");
+    }
+    return output;
+}
+
 
 int nrsh_builtin (std::vector<char *> args) {
     //strcmp return value if strings no equal
@@ -30,18 +41,13 @@ int nrsh_builtin (std::vector<char *> args) {
 
         for(int i = 0; i < builtin_str.size(); i++)
             std::cout << builtin_str[i] << "\n";
+    } else if (!strcmp(args[0], "exec")) {
+
+        args.erase(args.begin());
+        execvp(args[0], args.data());
+        
     }
     return 0;
-}
-
-std::vector<char *> split_space (char *to_split, int str_size) {
-    std::vector<char *> output(str_size);
-    char * token = strtok(to_split, " ");
-    for (int counter = 0; token != NULL; counter++) {
-        output[counter] = token;
-        token = strtok(NULL, " ");
-    }
-    return output;
 }
 
 int nrsh_exec(std::string arg) {
