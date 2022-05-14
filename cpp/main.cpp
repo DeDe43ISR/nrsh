@@ -33,7 +33,11 @@ int nrsh_builtin (std::vector<char *> args) {
         }
         return 0;
     } else if (!strcmp(args[0], "exit")) {
-        exit (EXIT_SUCCESS);
+        int len = sizeof(args) / sizeof(args[0]);
+        if (len == 1)
+            exit (EXIT_SUCCESS);
+        else
+            exit (atoi(args[1]));
     } else if (!strcmp(args[0], "help")) {
         std::cout << "DeDe Narco Shell\n";
         std::cout << "Type program names and arguments, and hit enter.\n";
@@ -100,18 +104,32 @@ int nrsh_exec(std::string arg) {
 int nrsh_run (std::vector<std::string> args) {
 
     int temp_exit_status = 500;
+    int exit_status = 500;
     std::vector<char *> args_str(args.size() + 1);
+    //for (std::size_t i = 0; i < args.size(); ++i) {
+    //    std::cout << "cmd : " << args[i] << "\n";
+    //}
     for (std::size_t i = 0; i < args.size(); ++i) {
         
         //std::cout << "to exec : " << args[i] << "\n";
+        //std::cout << "find : " << args[i].find(")") << "\n";
 
         if (!strcmp(&args[i][0], ";")) {
 
-            temp_exit_status = nrsh_exec(args[i-1]);
-
+            //std::cout << "to exec ;; : " << args[i-1] << "\n";
+            //std::cout << "find : " << args[i].find(")") << "\n";
+            if ( i > 2) {
+                if (!(args[i-2].find(")") != std::string::npos) && !(args[i-1].find(")") != std::string::npos)) {
+                    temp_exit_status = nrsh_exec(args[i-1]);
+                }
+            } else {
+                temp_exit_status = nrsh_exec(args[i-1]);
+            }
         } else if ((!strcmp(&args[i][0], "|") && (!strcmp(&args[i+1][0], "|")))) {
 
-            if (temp_exit_status != 0) {
+            if (exit_status != 0 && exit_status != 500) {
+                temp_exit_status == exit_status;
+            } else if (temp_exit_status != 0) {
                 //std::cout << "exec or : " << args[i-1] << "\n";
                 temp_exit_status = nrsh_exec(args[i-1]);
             } else {
@@ -129,7 +147,9 @@ int nrsh_run (std::vector<std::string> args) {
 
         } else if ((!strcmp(&args[i][0], "&") && (!strcmp(&args[i+1][0], "&")))) {
 
-            if (temp_exit_status == 0 || temp_exit_status == 500) {
+            if (exit_status == 0) {
+                temp_exit_status = exit_status;
+            } else if (temp_exit_status == 0 || temp_exit_status == 500) {
                 //std::cout << "exec and : " << args[i-1] << "\n";
                 temp_exit_status = nrsh_exec(args[i-1]);
             } else {
@@ -145,6 +165,36 @@ int nrsh_run (std::vector<std::string> args) {
                 i+=3;
                 continue;
             }
+        } else if (!strcmp(&args[i][0], "(")) {
+            std::vector<std::string>::iterator it = std::find(args.begin(), args.end(), ")");
+            //if (it != args.end())
+            //    std::cout << "Error : missing ')'" << "\n";
+            int end_index = std::distance(args.begin(), it);
+            int status;
+            pid_t pid;
+            std::vector<std::string> temp_args(end_index-i);
+            for (int c = 1; c < (end_index - i); ++c) {
+                temp_args[c] = args[c+i];
+                //std::cout << temp_args[c] << "\n";
+            }
+            pid = fork();
+            if (pid == 0) {
+                temp_exit_status = nrsh_run(temp_args);
+                exit(temp_exit_status);
+            } else {
+                do {
+                    waitpid(pid, &status, WUNTRACED);
+                } while (!WIFEXITED(status) && !WIFSIGNALED(status));
+            }
+            temp_exit_status = status;
+            exit_status = status;
+
+            i+=end_index;
+            //while (!strcmp(&args[i+1][0], " ")) {
+            //    std::cout << "cm : " << args[end_index+1] << "\n";
+            //    i++;
+            //}
+
         } else if (i == args.size() - 1) {
             
             temp_exit_status = nrsh_exec(args[i]);
@@ -160,7 +210,7 @@ std::vector<std::string> nrsh_get_line () {
     if (std::cin.eof()) {
         exit(EXIT_SUCCESS);
     }
-    std::regex re("([;|&]|[^;|&]+)");
+    std::regex re("([();|&]|[^();|&]+)");
     std::sregex_token_iterator first{input.begin(), input.end(), re}, last;
     std::vector<std::string> output{first, last};
 
