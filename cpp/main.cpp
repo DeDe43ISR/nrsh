@@ -195,6 +195,9 @@ int nrsh_run (std::vector<std::string> args) {
             //    i++;
             //}
 
+        } else if (!strcmp(&args[i][0], "\\")) {
+            args.erase(args.begin() + i);
+            continue;
         } else if (i == args.size() - 1) {
             
             temp_exit_status = nrsh_exec(args[i]);
@@ -204,12 +207,28 @@ int nrsh_run (std::vector<std::string> args) {
 
 std::vector<std::string> nrsh_get_line () {
 
+    std::string temp_input;
     std::string input;
 
-    std::getline(std::cin, input);
+    std::getline(std::cin, temp_input);
     if (std::cin.eof()) {
         exit(EXIT_SUCCESS);
     }
+
+    while (temp_input.back() == '\\' || temp_input.back() == '&' || temp_input.back() == '|') {
+        while (temp_input.back() == '\\') {
+            temp_input.pop_back();
+        }
+            
+        input.append(temp_input);
+        std::cout << " $ ";
+        std::getline(std::cin, temp_input);
+        if (std::cin.eof()) {
+            exit(EXIT_SUCCESS);
+        }
+    }
+
+    input.append(temp_input);
     std::regex re("([();|&]|[^();|&]+)");
     std::sregex_token_iterator first{input.begin(), input.end(), re}, last;
     std::vector<std::string> output{first, last};
